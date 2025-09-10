@@ -1,12 +1,13 @@
 import subprocess
 import json
 import pytest
+import sys
 
 
 def test_cli_basic_usage():
     """Test basic CLI usage."""
     result = subprocess.run(
-        ["python", "-m", "mylibrary", "WHERE age > 18"],
+        [sys.executable, "-m", "mylibrary", "WHERE age > 18"],
         capture_output=True,
         text=True,
         cwd="/Users/digimangos/test"
@@ -20,7 +21,7 @@ def test_cli_basic_usage():
 def test_cli_help():
     """Test CLI help option."""
     result = subprocess.run(
-        ["python", "-m", "mylibrary", "--help"],
+        [sys.executable, "-m", "mylibrary", "--help"],
         capture_output=True,
         text=True,
         cwd="/Users/digimangos/test"
@@ -33,7 +34,7 @@ def test_cli_help():
 def test_cli_version():
     """Test CLI version option."""
     result = subprocess.run(
-        ["python", "-m", "mylibrary", "--version"],
+        [sys.executable, "-m", "mylibrary", "--version"],
         capture_output=True,
         text=True,
         cwd="/Users/digimangos/test"
@@ -46,7 +47,7 @@ def test_cli_version():
 def test_cli_invalid_arguments():
     """Test CLI with invalid arguments."""
     result = subprocess.run(
-        ["python", "-m", "mylibrary", "--invalid"],
+        [sys.executable, "-m", "mylibrary", "--invalid"],
         capture_output=True,
         text=True,
         cwd="/Users/digimangos/test"
@@ -59,7 +60,7 @@ def test_cli_invalid_arguments():
 def test_cli_missing_sql():
     """Test CLI without SQL argument."""
     result = subprocess.run(
-        ["python", "-m", "mylibrary"],
+        [sys.executable, "-m", "mylibrary"],
         capture_output=True,
         text=True,
         cwd="/Users/digimangos/test"
@@ -73,7 +74,7 @@ def test_cli_missing_sql():
 def test_cli_format_json():
     """Test JSON output format."""
     result = subprocess.run(
-        ["python", "-m", "mylibrary", "--format", "json", "WHERE age > 18"],
+        [sys.executable, "-m", "mylibrary", "--format", "json", "WHERE age > 18"],
         capture_output=True,
         text=True,
         cwd="/Users/digimangos/test"
@@ -96,7 +97,7 @@ def test_cli_format_json():
 def test_cli_custom_context():
     """Test custom context option."""
     result = subprocess.run(
-        ["python", "-m", "mylibrary", "--context", "#user", "WHERE age > 18"],
+        [sys.executable, "-m", "mylibrary", "--context", "#user", "WHERE age > 18"],
         capture_output=True,
         text=True,
         cwd="/Users/digimangos/test"

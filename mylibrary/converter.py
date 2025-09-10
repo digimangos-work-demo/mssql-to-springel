@@ -99,6 +99,14 @@ def _convert_binary_op(expr: BinaryOp, context: str, mappings: Dict[str, str]) -
         else:
             return f"{right}.contains({left})"
 
+    # Special handling for NOT IN
+    if expr.operator.upper() == 'NOT IN':
+        if isinstance(expr.right, Literal) and expr.right.value_type == 'list':
+            items = [str(item) for item in expr.right.value]
+            return f"!{{{', '.join(items)}}}.contains({left})"
+        else:
+            return f"!{right}.contains({left})"
+
     # Add parentheses for compound conditions
     if expr.operator.upper() in ['AND', 'OR']:
         return f"({left}) {op} ({right})"
@@ -115,6 +123,8 @@ def _convert_unary_op(expr: UnaryOp, context: str, mappings: Dict[str, str]) -> 
         return f"{op}{operand}"
     elif expr.operator.upper() == 'IS NULL':
         return f"{operand} == null"
+    elif expr.operator.upper() == 'IS NOT NULL':
+        return f"{operand} != null"
     else:
         return f"{op} {operand}"
 
