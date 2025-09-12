@@ -56,6 +56,45 @@ def _get_default_mappings() -> Dict[str, str]:
     }
 
 
+def _extract_then_value_with_nesting(content: str) -> tuple[str, str]:
+    """
+    Extract the THEN value from content, handling nested CASE statements.
+    
+    Returns:
+        tuple: (then_value, remaining_content)
+    """
+    case_depth = 0
+    i = 0
+    
+    while i < len(content):
+        # Look for keywords
+        remaining = content[i:].upper()
+        
+        if remaining.startswith('CASE '):
+            case_depth += 1
+            i += 5
+        elif remaining.startswith('END') and (i + 3 >= len(content) or content[i + 3].isspace()):
+            if case_depth > 0:
+                case_depth -= 1
+                i += 3
+            else:
+                # This END is not part of a nested CASE
+                break
+        elif case_depth == 0:
+            # Only check for WHEN/ELSE when we're not inside a nested CASE
+            if remaining.startswith('WHEN '):
+                break
+            elif remaining.startswith('ELSE '):
+                break
+        
+        i += 1
+    
+    then_value = content[:i].strip()
+    remaining_content = content[i:].strip()
+    
+    return then_value, remaining_content
+
+
 def _convert_expression(expr: Expression, context: str, mappings: Dict[str, str]) -> str:
     """Convert expression to Spring EL."""
     if isinstance(expr, BinaryOp):
@@ -94,7 +133,13 @@ def _convert_binary_op(expr: BinaryOp, context: str, mappings: Dict[str, str]) -
     # Special handling for IN
     if expr.operator.upper() == 'IN':
         if isinstance(expr.right, Literal) and expr.right.value_type == 'list':
-            items = [str(item) for item in expr.right.value]
+            # Convert list items to properly quoted Spring EL set
+            items = []
+            for item in expr.right.value:
+                if isinstance(item, str):
+                    items.append(f"'{item}'")
+                else:
+                    items.append(str(item))
             return f"{{{', '.join(items)}}}.contains({left})"
         else:
             return f"{right}.contains({left})"
@@ -102,7 +147,13 @@ def _convert_binary_op(expr: BinaryOp, context: str, mappings: Dict[str, str]) -
     # Special handling for NOT IN
     if expr.operator.upper() == 'NOT IN':
         if isinstance(expr.right, Literal) and expr.right.value_type == 'list':
-            items = [str(item) for item in expr.right.value]
+            # Convert list items to properly quoted Spring EL set
+            items = []
+            for item in expr.right.value:
+                if isinstance(item, str):
+                    items.append(f"'{item}'")
+                else:
+                    items.append(str(item))
             return f"!{{{', '.join(items)}}}.contains({left})"
         else:
             return f"!{right}.contains({left})"
@@ -120,7 +171,11 @@ def _convert_unary_op(expr: UnaryOp, context: str, mappings: Dict[str, str]) -> 
     op = mappings.get(expr.operator, expr.operator)
 
     if expr.operator.upper() == 'NOT':
-        return f"{op}{operand}"
+        # For NOT operations, wrap complex expressions in parentheses to ensure proper precedence
+        if isinstance(expr.operand, BinaryOp) or '&&' in operand or '||' in operand or '==' in operand or '!=' in operand:
+            return f"{op}({operand})"
+        else:
+            return f"{op}{operand}"
     elif expr.operator.upper() == 'IS NULL':
         return f"{operand} == null"
     elif expr.operator.upper() == 'IS NOT NULL':
@@ -165,7 +220,69 @@ def _convert_variable(expr: Variable, context: str) -> str:
         # Parse and convert CASE expression to Spring EL ternary operators
         return _convert_case_expression(expr.name, context)
 
-    return f"{context}.{expr.name}"
+    # Clean up bracket identifiers for Spring EL
+    clean_name = _clean_identifier(expr.name)
+    return f"{context}.{clean_name}"
+
+
+def _clean_identifier(identifier: str) -> str:
+    """
+    Clean SQL identifiers for Spring EL property access.
+    
+    Removes brackets and converts hyphenated names to camelCase.
+    Examples:
+        [user_name] -> user_name
+        [user-profile] -> userProfile
+        [employment-data] -> employmentData
+        u.[first-name] -> u.firstName
+        [table].[column-name] -> table.columnName
+    """
+    # Remove square brackets
+    cleaned = identifier.strip()
+    
+    # Handle cases like [table].[column] or u.[column]
+    if '.' in cleaned:
+        parts = cleaned.split('.')
+        clean_parts = []
+        for part in parts:
+            # Remove brackets from each part
+            clean_part = part.strip()
+            if clean_part.startswith('[') and clean_part.endswith(']'):
+                clean_part = clean_part[1:-1]
+            # Convert hyphens to camelCase
+            clean_part = _to_camel_case(clean_part)
+            clean_parts.append(clean_part)
+        return '.'.join(clean_parts)
+    else:
+        # Handle simple cases like [column]
+        if cleaned.startswith('[') and cleaned.endswith(']'):
+            cleaned = cleaned[1:-1]
+        # Convert hyphens to camelCase
+        cleaned = _to_camel_case(cleaned)
+        return cleaned
+
+
+def _to_camel_case(text: str) -> str:
+    """
+    Convert hyphenated text to camelCase.
+    
+    Examples:
+        user-profile -> userProfile
+        age-group -> ageGroup
+        salary-band -> salaryBand
+        first-name -> firstName
+    """
+    if '-' not in text:
+        return text
+    
+    parts = text.split('-')
+    # First part stays lowercase, subsequent parts are capitalized
+    camel_case = parts[0].lower()
+    for part in parts[1:]:
+        if part:  # Handle double hyphens or trailing hyphens
+            camel_case += part.capitalize()
+    
+    return camel_case
 
 
 def _convert_conditional(expr: Conditional, context: str, mappings: Dict[str, str]) -> str:
@@ -193,11 +310,11 @@ def _convert_case_expression(case_sql: str, context: str) -> str:
     if case_sql.upper().endswith(' END'):
         case_sql = case_sql[:-4].strip()
     
-    # Parse WHEN...THEN pairs and ELSE clause
+    # Parse WHEN...THEN pairs and ELSE clause with nested CASE support
     when_clauses = []
     else_clause = None
     
-    # Use a more careful approach to find WHEN clauses
+    # Use a more sophisticated parser that handles nested CASE statements
     remaining = case_sql
     
     while remaining:
@@ -218,35 +335,47 @@ def _convert_case_expression(case_sql: str, context: str) -> str:
         # Extract condition (between WHEN and THEN)
         condition = when_content[:then_match.start()].strip()
         
-        # Find the next WHEN or ELSE to determine where this THEN value ends
+        # Find the next WHEN or ELSE, accounting for nested CASE statements
         rest_content = when_content[then_match.end():]
         
-        # Look for next WHEN or ELSE
-        next_when = re.search(r'\bWHEN\s+', rest_content, re.IGNORECASE)
-        next_else = re.search(r'\bELSE\s+', rest_content, re.IGNORECASE)
+        # Parse the THEN value, which might contain nested CASE statements
+        then_value, remaining_after_then = _extract_then_value_with_nesting(rest_content)
         
-        if next_else and (not next_when or next_else.start() < next_when.start()):
-            # ELSE comes first or there's no more WHEN
-            then_value = rest_content[:next_else.start()].strip()
-            else_clause = rest_content[next_else.end():].strip()
-            when_clauses.append((condition, then_value))
+        when_clauses.append((condition, then_value))
+        
+        # Check if we found an ELSE clause
+        if remaining_after_then.strip().upper().startswith('ELSE '):
+            else_clause = remaining_after_then[5:].strip()
             break
-        elif next_when:
-            # Another WHEN comes next
-            then_value = rest_content[:next_when.start()].strip()
-            when_clauses.append((condition, then_value))
-            remaining = rest_content[next_when.start():]
+        elif remaining_after_then.strip().upper().startswith('WHEN '):
+            remaining = remaining_after_then
         else:
-            # No more WHEN or ELSE, this is the last value
-            then_value = rest_content.strip()
-            when_clauses.append((condition, then_value))
             break
     
     if not when_clauses:
         return "'CASE_PARSE_ERROR'"
     
     # Convert to nested ternary operators
-    result = else_clause if else_clause else 'null'
+    # Handle else clause - parse it like then values
+    if else_clause:
+        if else_clause.strip().upper().startswith('CASE '):
+            # Recursively convert nested CASE statement
+            result = _convert_case_expression(else_clause, context)
+        elif else_clause.startswith("'") and else_clause.endswith("'"):
+            result = else_clause  # Keep as-is for single-quoted strings
+        elif else_clause.startswith('"') and else_clause.endswith('"'):
+            # Convert double quotes to single quotes
+            result = f"'{else_clause[1:-1]}'"
+        else:
+            # Try to parse as expression, fallback to literal
+            try:
+                from mylibrary.parser import _parse_simple_expression
+                else_expr = _parse_simple_expression(else_clause)
+                result = _convert_expression(else_expr, context, _get_default_mappings())
+            except:
+                result = f"'{else_clause}'"  # Treat as string literal
+    else:
+        result = 'null'
     
     # Build from right to left (last WHEN clause first)
     for condition, then_value in reversed(when_clauses):
@@ -259,9 +388,15 @@ def _convert_case_expression(case_sql: str, context: str) -> str:
             condition_expr = _parse_simple_expression(condition)
             condition_el = _convert_expression(condition_expr, context, _get_default_mappings())
             
-            # Handle quoted string literals in then_value
-            if then_value.startswith("'") and then_value.endswith("'"):
-                then_el = then_value  # Keep as-is for string literals
+            # Handle then_value which might contain nested CASE statements
+            if then_value.strip().upper().startswith('CASE '):
+                # Recursively convert nested CASE statement
+                then_el = _convert_case_expression(then_value, context)
+            elif then_value.startswith("'") and then_value.endswith("'"):
+                then_el = then_value  # Keep as-is for single-quoted strings
+            elif then_value.startswith('"') and then_value.endswith('"'):
+                # Convert double quotes to single quotes
+                then_el = f"'{then_value[1:-1]}'"
             else:
                 # Try to parse as expression, fallback to literal
                 try:

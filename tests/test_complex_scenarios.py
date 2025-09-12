@@ -84,8 +84,9 @@ class TestUnsupportedFeatures:
         expression = parse_sql_logic(sql)
         spring_el = to_spring_el(expression)
         assert "PARSE_ERROR" not in spring_el
-        assert "!{inactive, suspended, deleted}.contains(#root.status)" in spring_el
-        assert "!{test, temp}.contains(#root.category)" in spring_el
+        # Updated to expect properly quoted string literals in Spring EL
+        assert "!{'inactive', 'suspended', 'deleted'}.contains(#root.status)" in spring_el
+        assert "!{'test', 'temp'}.contains(#root.category)" in spring_el
     
     def test_deep_logical_nesting(self):
         """Test deeply nested logical structures."""

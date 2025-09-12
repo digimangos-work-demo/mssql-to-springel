@@ -17,6 +17,23 @@ from mylibrary.logic_models import (
 logger = logging.getLogger(__name__)
 
 
+def _is_numeric_literal(operand: str) -> bool:
+    """
+    Check if operand is a numeric literal (integer or decimal).
+    
+    Args:
+        operand: The string to check
+        
+    Returns:
+        True if operand represents a numeric literal, False otherwise
+    """
+    try:
+        float(operand)
+        return True
+    except ValueError:
+        return False
+
+
 def _normalize_whitespace(sql: str) -> str:
     """
     Normalize whitespace in SQL while preserving string literals.
@@ -296,7 +313,22 @@ def _parse_simple_expression(sql: str) -> Expression:
     comparison_ops = ['>=', '<=', '!=', '<>', '=', '>', '<', ' LIKE ', ' IN ', ' IS ']
     for op in comparison_ops:
         if op in sql.upper():
-            parts = sql.split(op.strip())  # Split on original case
+            # Split on the operator with proper case handling
+            # For spaced operators like ' IN ', split on the original spaces to avoid false matches
+            if op.startswith(' ') and op.endswith(' '):
+                # Find the operator in the original SQL (preserving case)
+                op_upper = op.upper()
+                sql_upper = sql.upper()
+                op_pos = sql_upper.find(op_upper)
+                if op_pos != -1:
+                    left_part = sql[:op_pos]
+                    right_part = sql[op_pos + len(op):]
+                    parts = [left_part, right_part]
+                else:
+                    continue
+            else:
+                parts = sql.split(op.strip())  # For non-spaced operators
+                
             if len(parts) == 2:
                 left = _parse_operand(parts[0].strip())
                 right_str = parts[1].strip()
@@ -450,6 +482,9 @@ def _parse_operand(operand: str) -> Expression:
         return Literal(operand[1:-1], "string")  # Handle double quotes too
     elif operand.isdigit():
         return Literal(int(operand), "number")
+    elif _is_numeric_literal(operand):
+        # Handle decimal numbers like 3.0, 85.5, 2.1, etc.
+        return Literal(float(operand), "number")
     elif operand.lower() in ['true', 'false']:
         return Literal(operand.lower() == 'true', "boolean")
     elif operand.upper() == 'NULL':
