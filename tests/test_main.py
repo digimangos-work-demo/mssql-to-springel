@@ -1,5 +1,5 @@
 import pytest
-from mylibrary.main import main
+from mssql_to_spring_el.main import main
 import sys
 from io import StringIO
 

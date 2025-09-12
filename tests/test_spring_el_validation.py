@@ -7,8 +7,8 @@ and follow proper Spring EL conventions.
 
 import pytest
 import re
-from mylibrary.parser import parse_sql_logic
-from mylibrary.converter import to_spring_el
+from mssql_to_spring_el.parser import parse_sql_logic
+from mssql_to_spring_el.converter import to_spring_el
 
 
 class TestSpringELValidation:

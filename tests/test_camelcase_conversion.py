@@ -3,8 +3,8 @@ Test specifically for camelCase conversion improvements.
 """
 
 import pytest
-from mylibrary.parser import parse_sql_logic
-from mylibrary.converter import to_spring_el
+from mssql_to_spring_el.parser import parse_sql_logic
+from mssql_to_spring_el.converter import to_spring_el
 
 
 class TestCamelCaseConversion:

@@ -6,7 +6,7 @@ This module traverses the expression AST and generates Spring EL syntax.
 
 import logging
 from typing import Dict, Any
-from mylibrary.logic_models import (
+from mssql_to_spring_el.logic_models import (
     Expression, BinaryOp, UnaryOp, FunctionCall,
     Literal, Variable, Conditional, LogicalGroup
 )
@@ -369,7 +369,7 @@ def _convert_case_expression(case_sql: str, context: str) -> str:
         else:
             # Try to parse as expression, fallback to literal
             try:
-                from mylibrary.parser import _parse_simple_expression
+                from mssql_to_spring_el.parser import _parse_simple_expression
                 else_expr = _parse_simple_expression(else_clause)
                 result = _convert_expression(else_expr, context, _get_default_mappings())
             except:
@@ -382,8 +382,8 @@ def _convert_case_expression(case_sql: str, context: str) -> str:
         # Convert condition and value to Spring EL
         try:
             # Parse the condition as a simple expression
-            from mylibrary.parser import _parse_simple_expression
-            from mylibrary.converter import _convert_expression, _get_default_mappings
+            from mssql_to_spring_el.parser import _parse_simple_expression
+            from mssql_to_spring_el.converter import _convert_expression, _get_default_mappings
             
             condition_expr = _parse_simple_expression(condition)
             condition_el = _convert_expression(condition_expr, context, _get_default_mappings())

@@ -1,6 +1,6 @@
 import pytest
-from mylibrary.converter import to_spring_el
-from mylibrary.logic_models import BinaryOp, Variable, Literal
+from mssql_to_spring_el.converter import to_spring_el
+from mssql_to_spring_el.logic_models import BinaryOp, Variable, Literal
 
 
 def test_convert_simple_comparison():

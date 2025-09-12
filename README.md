@@ -23,26 +23,26 @@ pip install .
 
 ```bash
 # Basic conversion
-python -m mylibrary "WHERE age > 18 AND name LIKE 'John%'"
+python -m mssql_to_spring_el "WHERE age > 18 AND name LIKE 'John%'"
 
 # JSON output format
-python -m mylibrary --format json "WHERE status = 'active'"
+python -m mssql_to_spring_el --format json "WHERE status = 'active'"
 
 # Custom Spring EL context
-python -m mylibrary --context "#user" "WHERE role = 'admin'"
+python -m mssql_to_spring_el --context "#user" "WHERE role = 'admin'"
 
 # Show version
-python -m mylibrary --version
+python -m mssql_to_spring_el --version
 
 # Show help
-python -m mylibrary --help
+python -m mssql_to_spring_el --help
 ```
 
 ### Python API Usage
 
 ```python
-from mylibrary.parser import parse_sql_logic
-from mylibrary.converter import to_spring_el
+from mssql_to_spring_el.parser import parse_sql_logic
+from mssql_to_spring_el.converter import to_spring_el
 
 # Parse MSSQL logic
 sql = "WHERE age BETWEEN 18 AND 65 AND status = 'active'"
@@ -104,7 +104,7 @@ Parses MSSQL logical expressions into AST objects.
 
 **Example:**
 ```python
-from mylibrary.parser import parse_sql_logic
+from mssql_to_spring_el.parser import parse_sql_logic
 
 # Simple comparison
 expr = parse_sql_logic("WHERE age > 18")
@@ -127,7 +127,7 @@ Converts Expression objects to Spring EL strings.
 
 **Example:**
 ```python
-from mylibrary.converter import to_spring_el
+from mssql_to_spring_el.converter import to_spring_el
 
 # Basic conversion
 spring_el = to_spring_el(expression)
@@ -198,7 +198,7 @@ parse_and_convert("WHERE ISNULL(nickname, name) = 'John'")
 ## CLI Reference
 
 ```bash
-python -m mylibrary [OPTIONS] SQL_EXPRESSION
+python -m mssql_to_spring_el [OPTIONS] SQL_EXPRESSION
 
 Options:
   --format FORMAT    Output format: 'text' or 'json' (default: text)
@@ -207,9 +207,9 @@ Options:
   --help           Show help message
 
 Examples:
-  python -m mylibrary "WHERE age > 18"
-  python -m mylibrary --format json "WHERE name LIKE 'John%'"
-  python -m mylibrary --context "#user" "WHERE role = 'admin'"
+  python -m mssql_to_spring_el "WHERE age > 18"
+  python -m mssql_to_spring_el --format json "WHERE name LIKE 'John%'"
+  python -m mssql_to_spring_el --context "#user" "WHERE role = 'admin'"
 ```
 
 ## Development
@@ -221,7 +221,7 @@ Examples:
 pytest
 
 # Run with coverage
-pytest --cov=mylibrary
+pytest --cov=mssql_to_spring_el
 
 # Run specific test file
 pytest tests/test_parser_contract.py -v
@@ -230,7 +230,7 @@ pytest tests/test_parser_contract.py -v
 ### Project Structure
 
 ```
-mylibrary/
+mssql_to_spring_el/
 ├── __init__.py          # Package initialization
 ├── __main__.py          # CLI entry point
 ├── main.py              # CLI implementation

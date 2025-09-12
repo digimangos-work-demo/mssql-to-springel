@@ -8,7 +8,7 @@ into abstract syntax tree (AST) objects defined in logic_models.py.
 import re
 import logging
 from typing import Optional
-from mylibrary.logic_models import (
+from mssql_to_spring_el.logic_models import (
     Expression, BinaryOp, UnaryOp, FunctionCall,
     Literal, Variable, Conditional, LogicalGroup
 )

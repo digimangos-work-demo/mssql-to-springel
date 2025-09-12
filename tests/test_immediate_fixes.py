@@ -4,8 +4,8 @@ Test the immediate whitespace fixes from the IMMEDIATE_FIXES plan.
 """
 
 import pytest
-from mylibrary.parser import parse_sql_logic, _normalize_whitespace
-from mylibrary.converter import to_spring_el
+from mssql_to_spring_el.parser import parse_sql_logic, _normalize_whitespace
+from mssql_to_spring_el.converter import to_spring_el
 
 
 class TestImmediateWhitespaceFixes:

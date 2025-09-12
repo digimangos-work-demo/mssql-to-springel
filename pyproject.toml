@@ -3,9 +3,9 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mylibrary"
+name = "mssql-to-spring-el"
 version = "0.1.0"
-description = "A simple Python library"
+description = "MSSQL Logic Parser to Spring Expression Language Converter"
 authors = [
     {name = "Your Name", email = "your.email@example.com"},
 ]
@@ -19,4 +19,4 @@ dev = ["pytest"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["mylibrary*"]
+include = ["mssql_to_spring_el*"]

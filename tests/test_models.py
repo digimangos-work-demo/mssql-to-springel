@@ -6,7 +6,7 @@ and equality comparison.
 """
 
 import pytest
-from mylibrary.logic_models import (
+from mssql_to_spring_el.logic_models import (
     Expression, BinaryOp, UnaryOp, FunctionCall,
     Literal, Variable, Conditional, LogicalGroup
 )

@@ -1,6 +1,6 @@
 import pytest
-from mylibrary.parser import parse_sql_logic
-from mylibrary.logic_models import BinaryOp, Variable, Literal
+from mssql_to_spring_el.parser import parse_sql_logic
+from mssql_to_spring_el.logic_models import BinaryOp, Variable, Literal
 
 
 def test_parse_simple_comparison():
